@@ -1,0 +1,17 @@
+{
+  "name": "rss-over-email",
+  "version": "1.0.0",
+  "description": "Get notified about new posts/articles from sites' rss feed in email!",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cheerio": "^1.0.0-rc.12",
+    "nodemailer": "^6.9.13"
+  }
+}
