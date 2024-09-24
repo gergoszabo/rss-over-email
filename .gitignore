@@ -1,4 +1,5 @@
-bin
-obj
-data/*
 .vscode
+node_modules
+config.js
+db.json
+rss-over-email.js
