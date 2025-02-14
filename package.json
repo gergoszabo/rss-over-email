@@ -1,21 +1,21 @@
 {
   "name": "rss-over-email",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Get notified about new posts/articles from sites' rss feed in email!",
   "main": "index.js",
   "type": "module",
   "scripts": {
     "start": "node index.js",
-    "build": "./node_modules/.bin/esbuild --platform=node --target=node20 --bundle index.js --format=esm --outfile=rss-over-email.js"
+    "build": "./node_modules/.bin/esbuild --platform=node --target=node22 --bundle index.js --format=esm --outfile=rss-over-email.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "cheerio": "1.0.0-rc.12",
-    "nodemailer": "6.9.15"
+    "cheerio": "1.0.0",
+    "nodemailer": "6.10.0"
   },
   "devDependencies": {
-    "esbuild": "0.24.0"
+    "esbuild": "0.25.0"
   }
 }
