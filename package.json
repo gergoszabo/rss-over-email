@@ -12,10 +12,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "cheerio": "1.0.0",
-    "nodemailer": "7.0.3"
+    "cheerio": "1.1.2",
+    "nodemailer": "7.0.5"
   },
   "devDependencies": {
-    "esbuild": "0.25.5"
+    "esbuild": "0.25.9"
   }
 }
