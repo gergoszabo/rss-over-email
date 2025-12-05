@@ -13,9 +13,9 @@
   "license": "ISC",
   "dependencies": {
     "cheerio": "1.1.2",
-    "nodemailer": "7.0.5"
+    "nodemailer": "7.0.11"
   },
   "devDependencies": {
-    "esbuild": "0.25.9"
+    "esbuild": "0.27.1"
   }
 }
