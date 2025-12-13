@@ -7,6 +7,10 @@ import cron from 'node-cron';
 import { Config } from './config.js';
 import pino from 'pino';
 
+const logger = pino({
+  level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
+});
+
 // Centralized error handling for uncaught exceptions
 process.on('uncaughtException', (err) => {
   logger.error({ err }, 'Uncaught Exception detected. Shutting down...');
@@ -24,10 +28,6 @@ const port = 3000;
 
 const DB_FILE = process.env.DB_FILE_PATH || path.join(process.cwd(), 'serverdb.json');
 const parser = new RSSParser();
-
-const logger = pino({
-  level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
-});
 
 // Helper function to escape HTML special characters
 const escapeHtml = (unsafe) => {
@@ -318,7 +318,8 @@ app.listen(port, () => {
   // Initial fetch on startup
   fetchFeeds();
   // Schedule feed fetching
-  cron.schedule(`0 */${Config.fetchIntervalHours} * * *`, () => {
+  const fetchInterval = Config.fetchIntervalHours || 1; // Default to 1 hour
+  cron.schedule(`0 */${fetchInterval} * * *`, () => {
     fetchFeeds();
   });
 });
