@@ -185,11 +185,13 @@ const fetchFeeds = async () => {
     try {
       const feed = await parser.parseURL(feedConfig.url);
       feed.items.forEach((item) => {
-        const existingItem = currentItems.find((i) => i.id === item.id || i.link === item.link);
+        const idSource = item.link || item.guid || item.title || Date.now().toString();
+        const computedId = createHash('sha256').update(idSource).digest('hex');
+
+        const existingItem = currentItems.find((i) => i.id === computedId || i.link === item.link);
         if (!existingItem) {
-          const idSource = item.link || item.guid || item.title || Date.now().toString();
           const newItem = {
-            id: createHash('sha256').update(idSource).digest('hex'),
+            id: computedId,
             title: item.title || '',
             link: item.link || '',
             comments: item.comments || '',
