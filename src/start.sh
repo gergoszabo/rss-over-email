@@ -4,14 +4,8 @@
 ARCH=$(uname -m)
 
 # Determine the executable name based on architecture
-if [ "$ARCH" = "arm64" ] || [ "$ARCH" = "aarch64" ]; then
-  EXECUTABLE="./rss-over-email-arm64"
-elif [ "$ARCH" = "x86_64" ]; then
-  EXECUTABLE="./rss-over-email-x64"
-else
-  echo "Unsupported architecture: $ARCH"
-  exit 1
-fi
+# Since only aarch64 build is needed, we directly use the arm64 executable
+EXECUTABLE="./rss-over-email-arm64"
 
 # Log file path
 LOG_FILE="app.log"
