@@ -4,8 +4,9 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import RSSParser from 'rss-parser';
 import cron from 'node-cron';
-import { Config } from './config.sample.js';
+import { Config } from './config.js';
 import pino from 'pino';
+import pretty from 'pino-pretty';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -16,15 +17,14 @@ const port = 3000;
 const DB_FILE = path.join(__dirname, 'serverdb.json');
 const parser = new RSSParser();
 
+const streams = [
+  { stream: pretty({ destination: 1 }), level: 'debug' }, // Pretty print to stdout
+  { stream: pino.destination({ dest: path.join(__dirname, 'app.log'), sync: false }), level: 'info' } // Raw JSON to file
+];
+
 const logger = pino({
   level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
-  transport: {
-    targets: [
-      { target: 'pino-pretty', options: { destination: 1 }, level: 'debug' }, // Pretty print to stdout
-      { target: 'pino/file', options: { destination: path.join(__dirname, 'app.log') }, level: 'info' } // Raw JSON to file
-    ]
-  }
-});
+}, pino.multistream(streams));
 
 // Helper function to generate HTML for an item
 const generateItemHtml = (item, previousItem, nextItem, previousUnreadItem, nextUnreadItem) => {
@@ -222,6 +222,12 @@ app.get('/items/next', (req, res) => {
     logger.info({ itemId: nextItem.id }, 'Serving next unread item');
     markItemAsRead(nextItem.id);
 
+    let pubdateFormatted = '';
+    if (nextItem.pubdate) {
+        const date = new Date(nextItem.pubdate);
+        pubdateFormatted = `${date.toISOString().substring(0, 10)} ${date.toTimeString().substring(0, 5)}`;
+    }
+
     const htmlResponse = `
       <!DOCTYPE html>
       <html lang="en">
@@ -238,7 +244,7 @@ app.get('/items/next', (req, res) => {
       </head>
       <body>
         <h1>${nextItem.title}</h1>
-        <div>${new Date(nextItem.pubdate).toISOString().substring(0, 10)} ${new Date(nextItem.pubdate).toTimeString().substring(0, 5)}</div>
+        <div>${pubdateFormatted}</div>
         <div><a href="${nextItem.link}">${nextItem.link}</a></div>
         ${(nextItem.comments && !nextItem.comments.startsWith(nextItem.link)) ? `<div>${nextItem.comments}</div>` : ''}
         <br>
