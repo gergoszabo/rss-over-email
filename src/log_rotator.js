@@ -23,7 +23,8 @@ async function emailLogFileAndRotate() {
     const logContent = await fs.promises.readFile(LOG_FILE_PATH, 'utf8');
 
     // 2. Email app.log content
-    if (logContent.trim().length > 0) { // Only send email if there's content
+    if (logContent.trim().length > 0) {
+      // Only send email if there's content
       const mailOptions = {
         from: EMAIL_USER,
         to: RECIPIENT_EMAIL,
@@ -57,7 +58,6 @@ async function emailLogFileAndRotate() {
     } else {
       console.log('app.log is empty, no content to append to rotated file.');
     }
-
   } catch (error) {
     console.error('Error during log rotation:', error);
   }

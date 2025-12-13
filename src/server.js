@@ -1,7 +1,7 @@
 import express from 'express';
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
+import { createHash } from 'node:crypto';
 import RSSParser from 'rss-parser';
 import cron from 'node-cron';
 import { Config } from './config.js';
@@ -19,20 +19,15 @@ process.on('unhandledRejection', (reason, promise) => {
   process.exit(1);
 });
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 const app = express();
 const port = 3000;
 
 const DB_FILE = process.env.DB_FILE_PATH || path.join(process.cwd(), 'serverdb.json');
 const parser = new RSSParser();
 
-const logger = pino(
-  {
-    level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
-  }
-);
+const logger = pino({
+  level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
+});
 
 // Helper function to escape HTML special characters
 const escapeHtml = (unsafe) => {
@@ -54,16 +49,16 @@ const generateItemHtml = (item, previousItem, nextItem, previousUnreadItem, next
 
   let navHtml = '';
   if (previousItem) {
-    navHtml += `<a href="/items/${encodeURIComponent(previousItem.id)}">Previous</a> | `;
+    navHtml += `<a href="/items/${previousItem.id}">Previous</a> | `;
   }
   if (nextItem) {
-    navHtml += `<a href="/items/${encodeURIComponent(nextItem.id)}">Next</a> | `;
+    navHtml += `<a href="/items/${nextItem.id}">Next</a> | `;
   }
   if (previousUnreadItem) {
-    navHtml += `<a href="/items/${encodeURIComponent(previousUnreadItem.id)}">Previous Unread</a> | `;
+    navHtml += `<a href="/items/${previousUnreadItem.id}">Previous Unread</a> | `;
   }
   if (nextUnreadItem) {
-    navHtml += `<a href="/items/${encodeURIComponent(nextUnreadItem.id)}">Next Unread</a>`;
+    navHtml += `<a href="/items/${nextUnreadItem.id}">Next Unread</a>`;
   }
 
   return `
@@ -191,12 +186,13 @@ const fetchFeeds = async () => {
       feed.items.forEach((item) => {
         const existingItem = currentItems.find((i) => i.id === item.id || i.link === item.link);
         if (!existingItem) {
+          const idSource = item.link || item.guid || item.title || Date.now().toString();
           const newItem = {
-            id: item.id || item.guid || item.link,
-            title: item.title,
-            link: item.link,
+            id: createHash('sha256').update(idSource).digest('hex'),
+            title: item.title || '',
+            link: item.link || '',
             comments: item.comments || '',
-            pubdate: item.pubDate || '',
+            pubDate: item.pubDate || '',
             read: false,
           };
           currentItems.push(newItem);
@@ -263,7 +259,7 @@ app.get('/items/next', (req, res) => {
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>${escapeHtml(nextItem.title)}</title>
+        <title>${escapeHtml(nextItem.title || '')}</title>
         <style>
           body { font-family: sans-serif; margin: 1em; }
           a { display: inline-block; padding: 0.5em 1em; margin: 0.2em; border: 1px solid #ccc; text-decoration: none; color: #333; border-radius: 4px; font-size: 1.1em; }
@@ -272,9 +268,9 @@ app.get('/items/next', (req, res) => {
         </style>
       </head>
       <body>
-        <h1>${escapeHtml(nextItem.title)}</h1>
+        <h1>${escapeHtml(nextItem.title || '')}</h1>
         <div>${pubdateFormatted}</div>
-        <div><a href="${escapeHtml(nextItem.link)}">${escapeHtml(nextItem.link)}</a></div>
+        <div><a href="${escapeHtml(nextItem.link || '')}">${escapeHtml(nextItem.link || '')}</a></div>
         ${nextItem.comments && !nextItem.comments.startsWith(nextItem.link) ? `<div>${escapeHtml(nextItem.comments)}</div>` : ''}
         <br>
         <div></div>
@@ -293,7 +289,8 @@ app.get('/items/:id', (req, res) => {
   logger.info({ itemId }, 'GET /items/:id request received');
 
   // Input validation for itemId
-  if (!itemId || !/^[a-zA-Z0-9_-]+$/.test(itemId)) {
+  // Now expecting a SHA256 hash (64 hexadecimal characters)
+  if (!itemId || !/^[a-fA-F0-9]{64}$/.test(itemId)) {
     logger.warn({ itemId }, 'Invalid item ID format received');
     return res.status(400).send('Invalid item ID.');
   }
