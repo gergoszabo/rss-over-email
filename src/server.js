@@ -6,8 +6,18 @@ import RSSParser from 'rss-parser';
 import cron from 'node-cron';
 import { Config } from './config.js';
 import pino from 'pino';
-import pretty from 'pino-pretty';
-import pinoMultiStream from 'pino-multi-stream';
+
+// Centralized error handling for uncaught exceptions
+process.on('uncaughtException', (err) => {
+  logger.error({ err }, 'Uncaught Exception detected. Shutting down...');
+  process.exit(1);
+});
+
+// Centralized error handling for unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  logger.error({ reason, promise }, 'Unhandled Rejection detected. Shutting down...');
+  process.exit(1);
+});
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -15,22 +25,13 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const port = 3000;
 
-const DB_FILE = path.join(__dirname, 'serverdb.json');
+const DB_FILE = process.env.DB_FILE_PATH || path.join(process.cwd(), 'serverdb.json');
 const parser = new RSSParser();
-
-const streams = [
-  { stream: pretty({ destination: 1 }), level: 'debug' }, // Pretty print to stdout
-  {
-    stream: pino.destination({ dest: path.join(__dirname, 'app.log'), sync: false }),
-    level: 'info',
-  }, // Raw JSON to file
-];
 
 const logger = pino(
   {
     level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
-  },
-  pinoMultiStream(streams)
+  }
 );
 
 // Helper function to escape HTML special characters
