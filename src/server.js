@@ -31,7 +31,8 @@ const parser = new RSSParser();
 
 // Helper function to escape HTML special characters
 const escapeHtml = (unsafe) => {
-  return unsafe
+  const str = String(unsafe); // Convert to string to handle null/undefined
+  return str
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
