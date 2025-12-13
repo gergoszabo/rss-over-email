@@ -5,3 +5,5 @@ db.json
 rss-over-email.js
 app.log
 serverdb.json
+rss-over-email-x64
+rss-over-email-arm64
