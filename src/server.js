@@ -7,6 +7,7 @@ import cron from 'node-cron';
 import { Config } from './config.js';
 import pino from 'pino';
 import pretty from 'pino-pretty';
+import pinoMultiStream from 'pino-multi-stream';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -19,33 +20,49 @@ const parser = new RSSParser();
 
 const streams = [
   { stream: pretty({ destination: 1 }), level: 'debug' }, // Pretty print to stdout
-  { stream: pino.destination({ dest: path.join(__dirname, 'app.log'), sync: false }), level: 'info' } // Raw JSON to file
+  {
+    stream: pino.destination({ dest: path.join(__dirname, 'app.log'), sync: false }),
+    level: 'info',
+  }, // Raw JSON to file
 ];
 
-const logger = pino({
-  level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
-}, pino.multistream(streams));
+const logger = pino(
+  {
+    level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
+  },
+  pinoMultiStream(streams)
+);
+
+// Helper function to escape HTML special characters
+const escapeHtml = (unsafe) => {
+  return unsafe
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+};
 
 // Helper function to generate HTML for an item
 const generateItemHtml = (item, previousItem, nextItem, previousUnreadItem, nextUnreadItem) => {
   let pubdateFormatted = '';
-  if (item.pubdate) {
-      const date = new Date(item.pubdate);
-      pubdateFormatted = `${date.toISOString().substring(0, 10)} ${date.toTimeString().substring(0, 5)}`;
+  if (item.pubDate) {
+    const date = new Date(item.pubDate);
+    pubdateFormatted = `${date.toISOString().substring(0, 10)} ${date.toTimeString().substring(0, 5)}`;
   }
 
   let navHtml = '';
   if (previousItem) {
-    navHtml += `<a href="/items/${previousItem.id}">Previous</a> | `;
+    navHtml += `<a href="/items/${encodeURIComponent(previousItem.id)}">Previous</a> | `;
   }
   if (nextItem) {
-    navHtml += `<a href="/items/${nextItem.id}">Next</a> | `;
+    navHtml += `<a href="/items/${encodeURIComponent(nextItem.id)}">Next</a> | `;
   }
   if (previousUnreadItem) {
-    navHtml += `<a href="/items/${previousUnreadItem.id}">Previous Unread</a> | `;
+    navHtml += `<a href="/items/${encodeURIComponent(previousUnreadItem.id)}">Previous Unread</a> | `;
   }
   if (nextUnreadItem) {
-    navHtml += `<a href="/items/${nextUnreadItem.id}">Next Unread</a>`;
+    navHtml += `<a href="/items/${encodeURIComponent(nextUnreadItem.id)}">Next Unread</a>`;
   }
 
   return `
@@ -54,7 +71,7 @@ const generateItemHtml = (item, previousItem, nextItem, previousUnreadItem, next
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>${item.title}</title>
+      <title>${escapeHtml(item.title)}</title>
       <style>
         body { font-family: sans-serif; margin: 1em; }
         a { display: inline-block; padding: 0.5em 1em; margin: 0.2em; border: 1px solid #ccc; text-decoration: none; color: #333; border-radius: 4px; font-size: 1.1em; }
@@ -63,10 +80,10 @@ const generateItemHtml = (item, previousItem, nextItem, previousUnreadItem, next
       </style>
     </head>
     <body>
-      <h1>${item.title}</h1>
+      <h1>${escapeHtml(item.title)}</h1>
       <div>${pubdateFormatted}</div>
-      <div><a href="${item.link}">${item.link}</a></div>
-      ${(item.comments && !item.comments.startsWith(item.link)) ? `<div>${item.comments}</div>` : ''}
+      <div><a href="${escapeHtml(item.link)}">${escapeHtml(item.link)}</a></div>
+      ${item.comments && !item.comments.startsWith(item.link) ? `<div>${escapeHtml(item.comments)}</div>` : ''}
       <br>
       <div>${navHtml}</div>
     </body>
@@ -97,7 +114,7 @@ const findNextUnreadItem = (currentId = null) => {
   const items = readItems();
   let startIndex = 0;
   if (currentId) {
-    const currentIndex = items.findIndex(item => item.id === currentId);
+    const currentIndex = items.findIndex((item) => item.id === currentId);
     if (currentIndex !== -1) {
       startIndex = currentIndex + 1;
     }
@@ -112,7 +129,7 @@ const findNextUnreadItem = (currentId = null) => {
 
 const findPreviousUnreadItem = (currentId) => {
   const items = readItems();
-  const currentIndex = items.findIndex(item => item.id === currentId);
+  const currentIndex = items.findIndex((item) => item.id === currentId);
   if (currentIndex === -1) {
     return null;
   }
@@ -126,7 +143,7 @@ const findPreviousUnreadItem = (currentId) => {
 
 const markItemAsRead = (id) => {
   const items = readItems();
-  const itemIndex = items.findIndex(item => item.id === id);
+  const itemIndex = items.findIndex((item) => item.id === id);
   if (itemIndex > -1) {
     items[itemIndex].read = true;
     writeItems(items);
@@ -139,12 +156,12 @@ const markItemAsRead = (id) => {
 
 const findItemById = (id) => {
   const items = readItems();
-  return items.find(item => item.id === id);
+  return items.find((item) => item.id === id);
 };
 
 const findPreviousItem = (id) => {
   const items = readItems();
-  const currentIndex = items.findIndex(item => item.id === id);
+  const currentIndex = items.findIndex((item) => item.id === id);
   if (currentIndex > 0) {
     return items[currentIndex - 1];
   }
@@ -153,7 +170,7 @@ const findPreviousItem = (id) => {
 
 const findNextItem = (id) => {
   const items = readItems();
-  const currentIndex = items.findIndex(item => item.id === id);
+  const currentIndex = items.findIndex((item) => item.id === id);
   if (currentIndex !== -1 && currentIndex < items.length - 1) {
     return items[currentIndex + 1];
   }
@@ -170,8 +187,8 @@ const fetchFeeds = async () => {
     logger.info({ name: feedConfig.name, url: feedConfig.url }, 'Processing feed');
     try {
       const feed = await parser.parseURL(feedConfig.url);
-      feed.items.forEach(item => {
-        const existingItem = currentItems.find(i => i.id === item.id || i.link === item.link);
+      feed.items.forEach((item) => {
+        const existingItem = currentItems.find((i) => i.id === item.id || i.link === item.link);
         if (!existingItem) {
           const newItem = {
             id: item.id || item.guid || item.link,
@@ -179,20 +196,29 @@ const fetchFeeds = async () => {
             link: item.link,
             comments: item.comments || '',
             pubdate: item.pubDate || '',
-            read: false
+            read: false,
           };
           currentItems.push(newItem);
           newlyAddedLinks.push(newItem.link);
-          logger.debug({ id: newItem.id, title: newItem.title, link: newItem.link }, 'Added new item');
+          logger.debug(
+            { id: newItem.id, title: newItem.title, link: newItem.link },
+            'Added new item'
+          );
         }
       });
     } catch (error) {
-      logger.error({ feed: feedConfig.name, error: error.message }, `Error fetching feed ${feedConfig.name}`);
+      logger.error(
+        { feed: feedConfig.name, error: error.message },
+        `Error fetching feed ${feedConfig.name}`
+      );
     }
   }
   writeItems(currentItems);
   const newItemsCount = currentItems.length - initialItemCount;
-  logger.info({ totalItemsAdded: newItemsCount, newlyAddedLinks }, 'RSS feeds fetched and database updated');
+  logger.info(
+    { totalItemsAdded: newItemsCount, newlyAddedLinks },
+    'RSS feeds fetched and database updated'
+  );
 };
 
 app.get('/', (req, res) => {
@@ -208,7 +234,9 @@ app.get('/', (req, res) => {
     const previousUnreadItem = findPreviousUnreadItem(nextItem.id);
     const nextUnreadItem = findNextUnreadItem(nextItem.id);
 
-    res.send(generateItemHtml(nextItem, previousItem, nextItemFull, previousUnreadItem, nextUnreadItem));
+    res.send(
+      generateItemHtml(nextItem, previousItem, nextItemFull, previousUnreadItem, nextUnreadItem)
+    );
   } else {
     logger.info('No unread items available');
     res.status(204).send(); // No content
@@ -223,9 +251,9 @@ app.get('/items/next', (req, res) => {
     markItemAsRead(nextItem.id);
 
     let pubdateFormatted = '';
-    if (nextItem.pubdate) {
-        const date = new Date(nextItem.pubdate);
-        pubdateFormatted = `${date.toISOString().substring(0, 10)} ${date.toTimeString().substring(0, 5)}`;
+    if (nextItem.pubDate) {
+      const date = new Date(nextItem.pubDate);
+      pubdateFormatted = `${date.toISOString().substring(0, 10)} ${date.toTimeString().substring(0, 5)}`;
     }
 
     const htmlResponse = `
@@ -234,7 +262,7 @@ app.get('/items/next', (req, res) => {
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>${nextItem.title}</title>
+        <title>${escapeHtml(nextItem.title)}</title>
         <style>
           body { font-family: sans-serif; margin: 1em; }
           a { display: inline-block; padding: 0.5em 1em; margin: 0.2em; border: 1px solid #ccc; text-decoration: none; color: #333; border-radius: 4px; font-size: 1.1em; }
@@ -243,10 +271,10 @@ app.get('/items/next', (req, res) => {
         </style>
       </head>
       <body>
-        <h1>${nextItem.title}</h1>
+        <h1>${escapeHtml(nextItem.title)}</h1>
         <div>${pubdateFormatted}</div>
-        <div><a href="${nextItem.link}">${nextItem.link}</a></div>
-        ${(nextItem.comments && !nextItem.comments.startsWith(nextItem.link)) ? `<div>${nextItem.comments}</div>` : ''}
+        <div><a href="${escapeHtml(nextItem.link)}">${escapeHtml(nextItem.link)}</a></div>
+        ${nextItem.comments && !nextItem.comments.startsWith(nextItem.link) ? `<div>${escapeHtml(nextItem.comments)}</div>` : ''}
         <br>
         <div></div>
       </body>
@@ -262,6 +290,13 @@ app.get('/items/next', (req, res) => {
 app.get('/items/:id', (req, res) => {
   const itemId = req.params.id;
   logger.info({ itemId }, 'GET /items/:id request received');
+
+  // Input validation for itemId
+  if (!itemId || !/^[a-zA-Z0-9_-]+$/.test(itemId)) {
+    logger.warn({ itemId }, 'Invalid item ID format received');
+    return res.status(400).send('Invalid item ID.');
+  }
+
   const item = findItemById(itemId);
 
   if (item) {

@@ -1,16 +1,16 @@
-import * as cheerio from "cheerio";
-import { createTransport } from "nodemailer";
-import { createHash } from "node:crypto";
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { Config } from "./config.js";
+import * as cheerio from 'cheerio';
+import { createTransport } from 'nodemailer';
+import { createHash } from 'node:crypto';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { Config } from './config.js';
 
-const DB_FILENAME = "./db.json";
+const DB_FILENAME = './db.json';
 
 if (!existsSync(DB_FILENAME)) {
-  writeFileSync(DB_FILENAME, JSON.stringify([]), { encoding: "utf8" });
+  writeFileSync(DB_FILENAME, JSON.stringify([]), { encoding: 'utf8' });
 }
 
-const db = JSON.parse(readFileSync(DB_FILENAME, { encoding: "utf8" }));
+const db = JSON.parse(readFileSync(DB_FILENAME, { encoding: 'utf8' }));
 
 const transporter = createTransport({
   host: Config.mail.server,
@@ -30,30 +30,23 @@ for (let i = 0; i < Config.feeds.length; i++) {
 
     const $ = cheerio.load(xml);
 
-    const $items = $("item");
+    const $items = $('item');
 
-    let html = "";
+    let html = '';
     for (const item of $items) {
-      const title = $(item.children.find((ch) => ch.name === "title"))
+      const title = $(item.children.find((ch) => ch.name === 'title'))
         .text()
-        .replace("<![CDATA[", "")
-        .replace("]]>", "")
+        .replace('<![CDATA[', '')
+        .replace(']]>', '')
         .trim();
-      const link = $(item.children.find((ch) => ch.name === "link").next)
-        .text()
-        .trim();
-      let pubdate = $(
-        item.children.find(
-          (ch) => ch.name && ch.name.toLowerCase() === "pubdate",
-        ),
-      )
+      const link = $(item.children.find((ch) => ch.name === 'link').next)
         .text()
         .trim();
-      pubdate = new Date(Date.parse(pubdate))
-        .toISOString()
-        .substring(0, 16)
-        .replace("T", " ");
-      let comments = item.children.find((ch) => ch.name === "comments");
+      let pubdate = $(item.children.find((ch) => ch.name && ch.name.toLowerCase() === 'pubdate'))
+        .text()
+        .trim();
+      pubdate = new Date(Date.parse(pubdate)).toISOString().substring(0, 16).replace('T', ' ');
+      let comments = item.children.find((ch) => ch.name === 'comments');
       if (comments) {
         comments = $(comments).text().trim();
         if (comments) {
@@ -61,7 +54,7 @@ for (let i = 0; i < Config.feeds.length; i++) {
         }
       }
 
-      const id = createHash("sha256").update(link).digest("hex");
+      const id = createHash('sha256').update(link).digest('hex');
 
       if (!db.find((p) => p.id === id)) {
         db.push({
@@ -71,7 +64,7 @@ for (let i = 0; i < Config.feeds.length; i++) {
           comments,
         });
         html += `<div>${pubdate} - ${title}<br><a href="${link}">${link}</a>${
-          comments || ""
+          comments || ''
         }</div><br>`;
       }
     }
@@ -102,4 +95,4 @@ for (let i = 0; i < Config.feeds.length; i++) {
   }
 }
 
-writeFileSync(DB_FILENAME, JSON.stringify(db, null, 4), { encoding: "utf8" });
+writeFileSync(DB_FILENAME, JSON.stringify(db, null, 4), { encoding: 'utf8' });

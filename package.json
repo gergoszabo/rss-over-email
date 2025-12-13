@@ -10,7 +10,9 @@
     "build": "./node_modules/.bin/esbuild --platform=node --target=node22 --bundle index.js --format=esm --outfile=rss-over-email.js",
     "build:server:x64": "bun build src/server.js --compile --target=bun-linux-x64 --minify --sourcemap --outfile rss-over-email-x64",
     "build:server:arm64": "bun build src/server.js --compile --target=bun-linux-arm64 --minify --sourcemap --outfile rss-over-email-arm64",
-    "build:server": "concurrently \"npm run build:server:x64\" \"npm run build:server:arm64\""
+    "build:server": "concurrently \"npm run build:server:x64\" \"npm run build:server:arm64\"",
+    "lint": "eslint .",
+    "format": "prettier --write ."
   },
   "keywords": [],
   "author": "",
@@ -27,6 +29,10 @@
   },
   "devDependencies": {
     "concurrently": "^9.2.1",
-    "esbuild": "0.27.1"
+    "esbuild": "0.27.1",
+    "eslint": "^9.39.2",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
+    "prettier": "^3.7.4"
   }
 }
