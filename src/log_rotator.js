@@ -3,14 +3,24 @@ import path from 'path';
 import nodemailer from 'nodemailer';
 
 // Configuration for email - ideally these would come from environment variables
-const EMAIL_SERVICE = process.env.EMAIL_SERVICE || 'gmail';
-const EMAIL_USER = process.env.EMAIL_USER || 'your-email@example.com';
-const EMAIL_PASS = process.env.EMAIL_PASS || 'your-email-password';
-const RECIPIENT_EMAIL = process.env.RECIPIENT_EMAIL || 'recipient@example.com';
+const EMAIL_HOST = process.env.EMAIL_HOST;
+const EMAIL_PORT = process.env.EMAIL_PORT;
+const EMAIL_USER = process.env.EMAIL_USER;
+const EMAIL_PASS = process.env.EMAIL_PASS;
+const RECIPIENT_EMAIL = process.env.RECIPIENT_EMAIL;
 const LOG_FILE_PATH = process.env.LOG_FILE_PATH || path.join(process.cwd(), 'app.log');
 
+// Validate essential environment variables
+if (!EMAIL_USER || !EMAIL_PASS || !RECIPIENT_EMAIL || !EMAIL_HOST || !EMAIL_PORT) {
+  throw new Error(
+    'Missing one or more essential environment variables: EMAIL_USER, EMAIL_PASS, RECIPIENT_EMAIL, EMAIL_HOST, EMAIL_PORT'
+  );
+}
+
 const transporter = nodemailer.createTransport({
-  service: EMAIL_SERVICE,
+  host: EMAIL_HOST,
+  port: parseInt(EMAIL_PORT, 10),
+  secure: EMAIL_PORT == 465, // Use 'true' if port is 465 (SSL/TLS), 'false' for other ports like 587 (STARTTLS)
   auth: {
     user: EMAIL_USER,
     pass: EMAIL_PASS,
