@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="RssOverEmail.Tests/RssOverEmail.Tests.csproj" />
+  <Project Path="RssOverEmail/RssOverEmail.csproj" />
+</Solution>
