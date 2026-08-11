@@ -1,7 +1,5 @@
 .vscode
-node_modules
-config.js
-db.json
-rss-over-email.js
 bin
 obj
+appsettings.json
+rss.db

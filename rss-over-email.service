@@ -1,0 +1,15 @@
+[Unit]
+Description=rss-over-email feed scanner and read API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/rss-over-email
+ExecStart=/opt/rss-over-email/rss-over-email
+Restart=on-failure
+RestartSec=5
+User=rss-over-email
+
+[Install]
+WantedBy=multi-user.target
